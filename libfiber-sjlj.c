@@ -51,9 +51,9 @@ void initFibers()
 	int i;
 	for ( i = 0; i < MAX_FIBERS; ++ i )
 	{
-		fiberList[numFibers].stack = 0;
-		fiberList[numFibers].function = 0;
-		fiberList[numFibers].active = 0;
+		fiberList[i].stack = 0;
+		fiberList[i].function = 0;
+		fiberList[i].active = 0;
 	}
 		
 	return;
