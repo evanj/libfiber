@@ -1,6 +1,6 @@
 #include "libfiber.h"
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <ucontext.h>
 
 /* The Fiber Structure
@@ -8,24 +8,24 @@
 */
 typedef struct
 {
-	ucontext_t context; // Stores the current context
-	int active; // A boolean flag, 0 if it is not active, 1 if it is
+	ucontext_t context; /* Stores the current context */
+	int active; /* A boolean flag, 0 if it is not active, 1 if it is */
 } fiber;
 
-// The fiber "queue"
+/* The fiber "queue" */
 static fiber fiberList[ MAX_FIBERS ];
 
-// The index of the currently executing fiber
+/* The index of the currently executing fiber */
 static int currentFiber = -1;
-// A boolean flag indicating if we are in the main process or if we are in a fiber
+/* A boolean flag indicating if we are in the main process or if we are in a fiber */
 static int inFiber = 0;
-// The number of active fibers
+/* The number of active fibers */
 static int numFibers = 0;
 
-// The "main" execution context
+/* The "main" execution context */
 static ucontext_t mainContext;
 
-// Sets all the fibers to be initially inactive
+/* Sets all the fibers to be initially inactive */
 void initFibers()
 {
 	int i;
@@ -37,23 +37,23 @@ void initFibers()
 	return;
 }
 
-// Switches from a fiber to main or from main to a fiber
+/* Switches from a fiber to main or from main to a fiber */
 void fiberYield()
 {
-	// If we are in a fiber, switch to the main process
+	/* If we are in a fiber, switch to the main process */
 	if ( inFiber )
 	{
-		// Switch to the main context
+		/* Switch to the main context */
 		LF_DEBUG_OUT( "libfiber debug: Fiber %d yielding the processor...", currentFiber );
 	
 		swapcontext( &fiberList[currentFiber].context, &mainContext );
 	}
-	// Else, we are in the main process and we need to dispatch a new fiber
+	/* Else, we are in the main process and we need to dispatch a new fiber */
 	else
 	{
 		if ( numFibers == 0 ) return;
 	
-		// Saved the state so call the next fiber
+		/* Saved the state so call the next fiber */
 		currentFiber = (currentFiber + 1) % numFibers;
 		
 		LF_DEBUG_OUT( "Switching to fiber %d.", currentFiber );
@@ -65,10 +65,10 @@ void fiberYield()
 		if ( fiberList[currentFiber].active == 0 )
 		{
 			LF_DEBUG_OUT( "Fiber %d is finished. Cleaning up.\n", currentFiber );
-			// Free the "current" fiber's stack
+			/* Free the "current" fiber's stack */
 			free( fiberList[currentFiber].context.uc_stack.ss_sp );
 			
-			// Swap the last fiber with the current, now empty, entry
+			/* Swap the last fiber with the current, now empty, entry */
 			-- numFibers;
 			if ( currentFiber != numFibers )
 			{
@@ -81,16 +81,16 @@ void fiberYield()
 	return;
 }
 
-// Records when the fiber has started and when it is done
-// so that we know when to free its resources. It is called in the fiber's
-// context of execution.
+/* Records when the fiber has started and when it is done
+so that we know when to free its resources. It is called in the fiber's
+context of execution. */
 static void fiberStart( void (*func)(void) )
 {
 	fiberList[currentFiber].active = 1;
 	func();
 	fiberList[currentFiber].active = 0;
 	
-	// Yield control, but because active == 0, this will free the fiber
+	/* Yield control, but because active == 0, this will free the fiber */
 	fiberYield();
 }
 
@@ -98,10 +98,10 @@ int spawnFiber( void (*func)(void) )
 {
 	if ( numFibers == MAX_FIBERS ) return LF_MAXFIBERS;
 	
-	// Add the new function to the end of the fiber list
+	/* Add the new function to the end of the fiber list */
 	getcontext( &fiberList[numFibers].context );
 
-	// Set the context to a newly allocated stack
+	/* Set the context to a newly allocated stack */
 	fiberList[numFibers].context.uc_link = 0;
 	fiberList[numFibers].context.uc_stack.ss_sp = malloc( FIBER_STACK );
 	fiberList[numFibers].context.uc_stack.ss_size = FIBER_STACK;
@@ -113,7 +113,7 @@ int spawnFiber( void (*func)(void) )
 		return LF_MALLOCERROR;
 	}
 	
-	// Create the context. The context calls fiberStart( func ).
+	/* Create the context. The context calls fiberStart( func ). */
 	makecontext( &fiberList[ numFibers ].context, (void (*)(void)) &fiberStart, 1, func );
 	++ numFibers;
 	
@@ -124,12 +124,12 @@ int waitForAllFibers()
 {
 	int fibersRemaining = 0;
 	
-	// If we are in a fiber, wait for all the *other* fibers to quit
+	/* If we are in a fiber, wait for all the *other* fibers to quit */
 	if ( inFiber ) fibersRemaining = 1;
 	
 	LF_DEBUG_OUT( "Waiting until there are only %d threads remaining...", fibersRemaining );
 	
-	// Execute the fibers until they quit
+	/* Execute the fibers until they quit */
 	while ( numFibers > fibersRemaining )
 	{
 		fiberYield();

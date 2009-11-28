@@ -1,10 +1,10 @@
 #include "libfiber.h"
 
-#include <signal.h>
+#include <assert.h>
 #include <setjmp.h>
-#include <malloc.h>
-
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct
 {
@@ -14,27 +14,28 @@ typedef struct
 	void* stack;
 } fiber;
 
-// The fiber "queue"
+/* The fiber "queue" */
 static fiber fiberList[ MAX_FIBERS ];
 
-// The index of the currently executing fiber
+/* The index of the currently executing fiber */
 static int currentFiber = -1;
-// A boolean flag indicating if we are in the main process or if we are in a fiber
+/* A boolean flag indicating if we are in the main process or if we are in a fiber */
 static int inFiber = 0;
-// The number of active fibers
+/* The number of active fibers */
 static int numFibers = 0;
 
-// The "main" execution context
+/* The "main" execution context */
 jmp_buf	mainContext;
 
-static void usr1handlerCreateStack( int argument )
+static void usr1handlerCreateStack( int signum )
 {
+	assert( signum == SIGUSR1 );
 	LF_DEBUG_OUT( "Signal handler for fiber %d", numFibers );
 	
-	// Save the current context, and return to terminate the signal handler scope
+	/* Save the current context, and return to terminate the signal handler scope */
 	if ( setjmp( fiberList[numFibers].context ) )
 	{
-		// We are being called again from the main context. Call the function
+		/* We are being called again from the main context. Call the function */
 		LF_DEBUG_OUT( "Staring fiber %d", currentFiber );
 		fiberList[currentFiber].function();
 		LF_DEBUG_OUT( "Fiber %d finished, returning to main", currentFiber );
@@ -68,7 +69,7 @@ int spawnFiber( void (*func)(void) )
 	
 	if ( numFibers == MAX_FIBERS ) return LF_MAXFIBERS;
 	
-	// Create the new stack
+	/* Create the new stack */
 	stack.ss_flags = 0;
 	stack.ss_size = FIBER_STACK;
 	stack.ss_sp = malloc( FIBER_STACK );
@@ -79,15 +80,15 @@ int spawnFiber( void (*func)(void) )
 	}
 	LF_DEBUG_OUT( "Stack address from malloc = 0x%x", stack.ss_sp );
 	
-	// Install the new stack for the signal handler
+	/* Install the new stack for the signal handler */
 	if ( sigaltstack( &stack, &oldStack ) )
 	{
 		LF_DEBUG_OUT( "Error: sigaltstack failed.", 0 );
 		return LF_SIGNALERROR;
 	}
 	
-	// Install the signal handler
-	// Sigaction *must* be used so we can specify SA_ONSTACK
+	/* Install the signal handler */
+	/* Sigaction *must* be used so we can specify SA_ONSTACK */
 	handler.sa_handler = &usr1handlerCreateStack;
 	handler.sa_flags = SA_ONSTACK;
 	sigemptyset( &handler.sa_mask );
@@ -98,18 +99,18 @@ int spawnFiber( void (*func)(void) )
 		return LF_SIGNALERROR;
 	}
 	
-	// Call the handler on the new stack
+	/* Call the handler on the new stack */
 	if ( raise( SIGUSR1 ) )
 	{
 		LF_DEBUG_OUT( "Error: raise failed.", 0 );
 		return LF_SIGNALERROR;
 	}
 	
-	// Restore the original stack and handler
+	/* Restore the original stack and handler */
 	sigaltstack( &oldStack, 0 );
 	sigaction( SIGUSR1, &oldHandler, 0 );
 	
-	// We now have an additional fiber, ready to roll
+	/* We now have an additional fiber, ready to roll */
 	fiberList[numFibers].active = 1;
 	fiberList[numFibers].function = func;
 	fiberList[numFibers].stack = stack.ss_sp;
@@ -120,47 +121,47 @@ int spawnFiber( void (*func)(void) )
 
 void fiberYield()
 {
-	// If we are in a fiber, switch to the main context
+	/* If we are in a fiber, switch to the main context */
 	if ( inFiber )
 	{
-		// Store the current state
+		/* Store the current state */
 		if ( setjmp( fiberList[ currentFiber ].context ) )
 		{
-			// Returning via longjmp (resume)
+			/* Returning via longjmp (resume) */
 			LF_DEBUG_OUT( "Fiber %d resuming...", currentFiber );
 		}
 		else
 		{
 			LF_DEBUG_OUT( "Fiber %d yielding the processor...", currentFiber );
-			// Saved the state: Let's switch back to the main state
+			/* Saved the state: Let's switch back to the main state */
 			longjmp( mainContext, 1 );
 		}
 	}
-	// If we are in main, dispatch the next fiber
+	/* If we are in main, dispatch the next fiber */
 	else
 	{
 		if ( numFibers == 0 ) return;
 	
-		// Save the current state
+		/* Save the current state */
 		if ( setjmp( mainContext ) )
 		{
-			// The fiber yielded the context to us
+			/* The fiber yielded the context to us */
 			inFiber = 0;
 			if ( ! fiberList[currentFiber].active )
 			{
-				// If we get here, the fiber returned and is done!
+				/* If we get here, the fiber returned and is done! */
 				LF_DEBUG_OUT( "Fiber %d returned, cleaning up.", currentFiber );
 				
 				free( fiberList[currentFiber].stack );
 				
-				// Swap the last fiber with the current, now empty, entry
+				/* Swap the last fiber with the current, now empty, entry */
 				-- numFibers;
 				if ( currentFiber != numFibers )
 				{
 					fiberList[ currentFiber ] = fiberList[ numFibers ];
 				}
 				
-				// Clean up the entry
+				/* Clean up the entry */
 				fiberList[numFibers].stack = 0;
 				fiberList[numFibers].function = 0;
 				fiberList[numFibers].active = 0;
@@ -172,7 +173,7 @@ void fiberYield()
 		}
 		else
 		{
-			// Saved the state so call the next fiber
+			/* Saved the state so call the next fiber */
 			currentFiber = (currentFiber + 1) % numFibers;
 			
 			LF_DEBUG_OUT( "Switching to fiber %d", currentFiber );
@@ -188,7 +189,7 @@ int waitForAllFibers()
 {
 	int fibersRemaining = 0;
 	
-	// If we are in a fiber, wait for all the *other* fibers to quit
+	/* If we are in a fiber, wait for all the *other* fibers to quit */
 	if ( inFiber ) fibersRemaining = 1;
 	
 	LF_DEBUG_OUT( "Waiting until there are only %d threads remaining...", fibersRemaining );

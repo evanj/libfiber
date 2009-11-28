@@ -8,7 +8,7 @@
 #define	LF_INFIBER	4
 #define LF_SIGNALERROR	5
 
-// Define a debugging output macro
+/* Define a debugging output macro */
 #ifdef LF_DEBUG
 
 #include <stdio.h>
@@ -26,16 +26,16 @@
 #define FIBER_STACK 1024*1024
 
 
-// Should be called before executing any of the other functions
+/* Should be called before executing any of the other functions. */
 extern void initFibers();
 
-// Creates a new fiber, running the function that is passed as an argument.
+/* Creates a new fiber, running the function that is passed as an argument. */
 extern int spawnFiber( void (*func)(void) );
 
-// Yield control to another execution context
+/* Yield control to another execution context. */
 extern void fiberYield();
 
-// Execute the fibers until they all quit
+/* Execute the fibers until they all quit. */
 extern int waitForAllFibers();
 
 #endif

@@ -1,17 +1,18 @@
-#include <malloc.h>
+#include <assert.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-// 64kB stack
+/* 64kB stack */
 #define FIBER_STACK 1024*64
 
 jmp_buf child, parent;
 
-// The child thread will execute this function
+/* The child thread will execute this function. */
 void threadFunction()
 {
-        printf( "Child fiber yielding to parent\n" );
+	printf( "Child fiber yielding to parent\n" );
 	if ( setjmp( child ) )
 	{
 		printf( "Child thread exiting\n" );
@@ -21,8 +22,9 @@ void threadFunction()
 	longjmp( parent, 1 );
 }
 
-void signalHandler( int arg )
+void signalHandler( int signum )
 {
+    assert( signum == SIGUSR1 );
 	if ( setjmp( child ) )
 	{
 		threadFunction();
@@ -36,7 +38,7 @@ int main()
 	stack_t stack;
 	struct sigaction sa;
 	
-	// Create the new stack
+	/* Create the new stack */
 	stack.ss_flags = 0;
 	stack.ss_size = FIBER_STACK;
 	stack.ss_sp = malloc( FIBER_STACK );
@@ -47,18 +49,18 @@ int main()
 	}
 	sigaltstack( &stack, 0 );
 	
-	// Set up the custom signal handler
+	/* Set up the custom signal handler */
 	sa.sa_handler = &signalHandler;
 	sa.sa_flags = SA_ONSTACK;
 	sigemptyset( &sa.sa_mask );
 	sigaction( SIGUSR1, &sa, 0 );
 	
-	// Send the signal to call the function on the new stack
+	/* Send the signal to call the function on the new stack */
 	printf( "Creating child fiber\n" );
 	raise( SIGUSR1 );
-	
-        // Execute the child context
-        printf( "Switching to child fiber\n" );
+
+	/* Execute the child context */
+	printf( "Switching to child fiber\n" );
 	if ( setjmp( parent ) )
 	{
 		printf( "Switching to child fiber again\n" );
@@ -66,8 +68,8 @@ int main()
 	}
 	else longjmp( child, 1 );
 	
-	// Free the stack
+	/* Free the stack */
 	free( stack.ss_sp );
 	printf( "Child fiber returned and stack freed\n" );
-        return 0;
+	return 0;
 }

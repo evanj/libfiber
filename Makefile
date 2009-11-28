@@ -1,6 +1,6 @@
-CC=gcc -Wall -pedantic -O2
+CFLAGS=-Wall -Wextra -pedantic -Werror
 
-all: basic-clone basic-uc basic-sjlj example-uc example-clone example-sjlj
+all: basic-uc basic-sjlj example-uc example-sjlj
 
 clean:
 	rm *.o basic-clone basic-uc basic-sjlj basic-*.o example-* &> /dev/null || true

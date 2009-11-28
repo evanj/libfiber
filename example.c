@@ -19,7 +19,7 @@ void fibonacchi()
 	int i;
 	int fib[2] = { 0, 1 };
 	
-	//sleep( 2 );
+	/*sleep( 2 ); */
 	printf( "fibonacchi(0) = 0\nfibonnachi(1) = 1\n" );
 	for( i = 2; i < 15; ++ i )
 	{
@@ -35,7 +35,7 @@ void squares()
 {
 	int i;
 	
-	//sleep( 5 );
+	/*sleep( 5 ); */
 	for ( i = 0; i < 10; ++ i )
 	{
 		printf( "%d*%d = %d\n", i, i, i*i );
@@ -45,17 +45,17 @@ void squares()
 
 int main()
 {
-	// Initialize the fiber library
+	/* Initialize the fiber library */
 	initFibers();
 	
-	// Go fibers!
+	/* Go fibers! */
 	spawnFiber( &fiber1 );
 	spawnFiber( &fibonacchi );
 	spawnFiber( &squares );
 
-	// Since these are nonpre-emptive, we must allow them to run
+	/* Since these are nonpre-emptive, we must allow them to run */
 	waitForAllFibers();
 	
-	// The program quits
+	/* The program quits */
 	return 0;
 }
