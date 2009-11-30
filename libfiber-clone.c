@@ -1,30 +1,30 @@
 #include "libfiber.h"
 
-#include <sys/types.h> // For pid_t
-#include <sys/wait.h> // For wait
-#include <signal.h> // For SIGCHLD
-#include <sched.h> // For clone
-#include <unistd.h> // For getpid
+#include <sched.h> /* For clone */
+#include <signal.h> /* For SIGCHLD */
+#include <stdlib.h>
+#include <sys/types.h> /* For pid_t */
+#include <sys/wait.h> /* For wait */
+#include <unistd.h> /* For getpid */
 
-#include <malloc.h>
 
 /* The Fiber Structure
 *  Contains the information about individual fibers.
 */
 typedef struct
 {
-	pid_t pid; // The pid of the child thread as returned by clone
-	void* stack; // The stack pointer
+	pid_t pid; /* The pid of the child thread as returned by clone */
+	void* stack; /* The stack pointer */
 } fiber;
 
-// The fiber "queue"
+/* The fiber "queue" */
 static fiber fiberList[ MAX_FIBERS ];
-// The pid of the parent process
+/* The pid of the parent process */
 static pid_t parentPid;
-// The number of active fibers
+/* The number of active fibers */
 static int numFibers = 0;
 
-// Initialize the fibers to null
+/* Initialize the fibers to null */
 void initFibers()
 {
 	int i;
@@ -37,38 +37,61 @@ void initFibers()
 	parentPid = getpid();
 }
 
-// Call the sched_yield system call which moves the current process to the
-// end of the process queue
+/* Call the sched_yield system call which moves the current process to the
+end of the process queue. */
 void fiberYield()
 {
 	sched_yield();
 }
 
-// Exists to give the proper function type to clone
+/* Standard C99 does not permit void* to point to functions. This exists to
+work around that in a standards compliant fashion. */
+struct FiberArguments {
+	void (*function)();
+};
+
+/* Exists to give the proper function type to clone. */
 static int fiberStart( void* arg )
 {
-	LF_DEBUG_OUT( "Child created and calling function = 0x%x", (int) arg );
-	((void (*)()) arg)();
+	struct FiberArguments* arguments = (struct FiberArguments*) arg;
+	void (*function)() = arguments->function;
+	free( arguments );
+	arguments = NULL;
+
+	LF_DEBUG_OUT( "Child created and calling function = %p", arg );
+	function();
 	return 0;
 }
 
 int spawnFiber( void (*func)(void) )
 {
+	struct FiberArguments* arguments = NULL;
 	if ( numFibers == MAX_FIBERS ) return LF_MAXFIBERS;
 
-	// Allocate the stack
+	/* Allocate the stack */
 	fiberList[numFibers].stack = malloc( FIBER_STACK );
 	if ( fiberList[numFibers].stack == 0 )
 	{
 		LF_DEBUG_OUT( "Error: Could not allocate stack.", 0 );
 		return LF_MALLOCERROR;
 	}
-	
-	// Call the clone system call to create the child thread
+
+	/* Create the arguments structure. */
+	arguments = (struct FiberArguments*) malloc( sizeof(*arguments) );
+	if ( arguments == 0 ) {
+		free( fiberList[numFibers].stack );
+		LF_DEBUG_OUT( "Error: Could not allocate fiber arguments.", 0 );
+		return LF_MALLOCERROR;
+	}
+	arguments->function = func;
+
+	/* Call the clone system call to create the child thread */
 	fiberList[numFibers].pid = clone( &fiberStart, (char*) fiberList[numFibers].stack + FIBER_STACK,
-		SIGCHLD | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM, (void*) func );
+		SIGCHLD | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM, arguments );
 	if ( fiberList[numFibers].pid == -1 )
 	{
+		free( fiberList[numFibers].stack );
+		free( arguments );
 		LF_DEBUG_OUT( "Error: clone system call failed.", 0 );
 		return LF_CLONEERROR;
 	}
@@ -84,11 +107,11 @@ int waitForAllFibers()
 	int i;
 	int fibersRemaining = 0;
 		
-	// Check to see if we are in a fiber, since we don't get signals in the child threads
+	/* Check to see if we are in a fiber, since we don't get signals in the child threads */
 	pid = getpid();
 	if ( pid != parentPid ) return LF_INFIBER;			
 		
-	// Wait for the fibers to quit, then free the stacks
+	/* Wait for the fibers to quit, then free the stacks */
 	while ( numFibers > fibersRemaining )
 	{
 		pid = wait( 0 );
@@ -98,7 +121,7 @@ int waitForAllFibers()
 			exit( 1 );
 		}
 		
-		// Find the fiber, free the stack, and swap it with the last one
+		/* Find the fiber, free the stack, and swap it with the last one */
 		for ( i = 0; i < numFibers; ++ i )
 		{
 			if ( fiberList[i].pid == pid )

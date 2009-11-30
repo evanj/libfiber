@@ -1,9 +1,10 @@
 CFLAGS=-Wall -Wextra -pedantic -Werror -g
 
-all: basic-uc basic-sjlj example-uc example-sjlj
+PROGRAMS=basic-uc basic-sjlj basic-clone example-uc example-sjlj example-clone
+all: $(PROGRAMS)
 
 clean:
-	rm *.o basic-clone basic-uc basic-sjlj basic-*.o example-* &> /dev/null || true
+	$(RM) *.o $(PROGRAMS) &> /dev/null || true
 	
 debug: clean
 	make "CC=gcc -g -Wall -pedantic -DLF_DEBUG"

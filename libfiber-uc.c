@@ -2,7 +2,9 @@
 Otherwise, getcontext/swapcontext causes memory corruption. See:
 
 http://lists.apple.com/archives/darwin-dev/2008/Jan/msg00229.html */
+#ifdef __APPLE__
 #define _XOPEN_SOURCE
+#endif
 
 #include "libfiber.h"
 

@@ -1,16 +1,18 @@
-#include <malloc.h>
+#include <assert.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signal.h>
-#include <sched.h>
-#include <stdio.h>
 
-// 64kB stack
+/* 64kB stack */
 #define FIBER_STACK 1024*64
 
-// The child thread will execute this function
+/* The child thread will execute this function */
 int threadFunction( void* argument )
 {
+        assert( argument == 0 );
         printf( "child thread exiting\n" );
         return 0;
 }
@@ -20,7 +22,7 @@ int main()
         void* stack;
         pid_t pid;
         
-        // Allocate the stack
+        /* Allocate the stack */
         stack = malloc( FIBER_STACK );
         if ( stack == 0 )
         {
@@ -30,7 +32,7 @@ int main()
         
         printf( "Creating child thread\n" );
         
-        // Call the clone system call to create the child thread
+        /* Call the clone system call to create the child thread */
         pid = clone( &threadFunction, (char*) stack + FIBER_STACK,
                 SIGCHLD | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM, 0 );
         if ( pid == -1 )
@@ -39,7 +41,7 @@ int main()
                 exit( 2 );
         }
         
-        // Wait for the child thread to exit
+        /* Wait for the child thread to exit */
         pid = waitpid( pid, 0, 0 );
         if ( pid == -1 )
         {
@@ -47,7 +49,7 @@ int main()
                 exit( 3 );
         }
         
-        // Free the stack
+        /* Free the stack */
         free( stack );
         printf( "Child thread returned and stack freed.\n" );
         

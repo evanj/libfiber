@@ -2,11 +2,13 @@
 Otherwise, getcontext/swapcontext causes memory corruption. See:
 
 http://lists.apple.com/archives/darwin-dev/2008/Jan/msg00229.html */
+#ifdef __APPLE__
 #define _XOPEN_SOURCE
+#endif
 
-#include <ucontext.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ucontext.h>
 
 /* 64kB stack */
 #define FIBER_STACK 1024*64
