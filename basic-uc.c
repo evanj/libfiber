@@ -6,6 +6,7 @@ http://lists.apple.com/archives/darwin-dev/2008/Jan/msg00229.html */
 #define _XOPEN_SOURCE
 #endif
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ucontext.h>
@@ -27,6 +28,7 @@ void threadFunction()
 int main()
 {
         void* child_stack;
+        int error;
         /* Get the current execution context */
         getcontext( &child );
 
@@ -48,9 +50,11 @@ int main()
         
         /* Execute the child context */
         printf( "Switching to child fiber\n" );
-        swapcontext( &parent, &child );
+        error = swapcontext( &parent, &child );
+        assert( error == 0 );
         printf( "Switching to child fiber again\n" );
-        swapcontext( &parent, &child );
+        error = swapcontext( &parent, &child );
+        assert( error == 0 );
 
         /* Free the stack */
         free( child_stack );
