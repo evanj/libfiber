@@ -20,16 +20,16 @@ basic-uc: basic-uc.o
 basic-sjlt: basic-sjlj.o
 
 example-uc: libfiber-uc.o example.o
-	$(CC) libfiber-uc.o example.o -o example-uc
+	$(CC) $(LDFLAGS) libfiber-uc.o example.o -o example-uc
 
 example-clone: libfiber-clone.o example.o
-	$(CC) libfiber-clone.o example.o -o example-clone
+	$(CC) $(LDFLAGS) libfiber-clone.o example.o -o example-clone
 	
 example-sjlj: libfiber-sjlj.o example.o
-	$(CC) libfiber-sjlj.o example.o -o example-sjlj
+	$(CC) $(LDFLAGS) libfiber-sjlj.o example.o -o example-sjlj
 
 example-asm: libfiber-asm.o example.o
-	$(CC) libfiber-asm.o example.o -o example-asm
+	$(CC) $(LDFLAGS) libfiber-asm.o example.o -o example-asm
 
 libfiber-uc.o: libfiber.h
 libfiber-clone.o: libfiber.h
