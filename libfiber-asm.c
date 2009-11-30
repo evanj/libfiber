@@ -150,7 +150,7 @@ ASM_PREFIX "asm_call_fiber_exit:\n"
 static void create_stack(fiber* fiber, int stack_size, void (*fptr)(void)) {
 	int i;
 #ifdef __x86_64
-	/* x86-64: ebx, ebp, edi, esi */
+	/* x86-64: rbx, rbp, r12, r13, r14, r15 */
 	static const int NUM_REGISTERS = 6;
 #else
 	/* x86: ebx, ebp, edi, esi */
@@ -179,10 +179,43 @@ static void create_stack(fiber* fiber, int stack_size, void (*fptr)(void)) {
 	}
 }
 
+#ifdef __x86_64
+/* arguments in rdi, rsi, rdx */
+asm(".globl " ASM_PREFIX "asm_switch\n"
+ASM_PREFIX "asm_switch:\n"
+#ifndef __APPLE__
+"\t.type asm_switch, @function\n"
+#endif
+/* Move return value into rax */
+"\tmovq %rdx, %rax\n"
+
+/* save registers: rbx rbp r12 r13 r14 r15 (rsp into structure) */
+"\tpushq %rbx\n"
+"\tpushq %rbp\n"
+"\tpushq %r12\n"
+"\tpushq %r13\n"
+"\tpushq %r14\n"
+"\tpushq %r15\n"
+"\tmovq %rsp, (%rsi)\n"
+
+/* restore registers */
+"\tmovq (%rdi), %rsp\n"
+"\tpopq %r15\n"
+"\tpopq %r14\n"
+"\tpopq %r13\n"
+"\tpopq %r12\n"
+"\tpopq %rbp\n"
+"\tpopq %rbx\n"
+
+/* return to the "next" fiber with eax set to return_value */
+"\tret\n");
+#else
 /* static int asm_switch(fiber* next, fiber* current, int return_value); */
 asm(".globl " ASM_PREFIX "asm_switch\n"
 ASM_PREFIX "asm_switch:\n"
-/*"\t.type asm_switch, @function\n"*/
+#ifndef __APPLE__
+"\t.type asm_switch, @function\n"
+#endif
 /* Move return value into eax, current pointer into ecx, next pointer into edx */
 "\tmov 12(%esp), %eax\n"
 "\tmov 8(%esp), %ecx\n"
@@ -204,3 +237,4 @@ ASM_PREFIX "asm_switch:\n"
 
 /* return to the "next" fiber with eax set to return_value */
 "\tret\n");
+#endif
