@@ -25,7 +25,7 @@
 /* The maximum number of fibers that can be active at once. */
 #define MAX_FIBERS 10
 /* The size of the stack for each fiber. */
-#define FIBER_STACK 1024*1024
+#define FIBER_STACK (1024*1024)
 
 
 /* Should be called before executing any of the other functions. */
@@ -39,5 +39,13 @@ extern void fiberYield();
 
 /* Execute the fibers until they all quit. */
 extern int waitForAllFibers();
+
+/* Define VALGRIND to include valgrind specific code */
+#ifdef VALGRIND
+#include <valgrind/valgrind.h>
+#else
+#define VALGRIND_STACK_REGISTER(start, end) (0)
+#define VALGRIND_STACK_DEREGISTER(id)
+#endif
 
 #endif

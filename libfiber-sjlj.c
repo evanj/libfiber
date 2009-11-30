@@ -12,6 +12,9 @@ typedef struct
 	void (*function)(void);
 	int active;
 	void* stack;
+#ifdef VALGRIND
+	int stackId;
+#endif
 } fiber;
 
 /* The fiber "queue" */
@@ -36,7 +39,7 @@ static void usr1handlerCreateStack( int signum )
 	if ( setjmp( fiberList[numFibers].context ) )
 	{
 		/* We are being called again from the main context. Call the function */
-		LF_DEBUG_OUT1( "Staring fiber %d", currentFiber );
+		LF_DEBUG_OUT1( "Starting fiber %d", currentFiber );
 		fiberList[currentFiber].function();
 		LF_DEBUG_OUT1( "Fiber %d finished, returning to main", currentFiber );
 		fiberList[currentFiber].active = 0;
@@ -79,7 +82,11 @@ int spawnFiber( void (*func)(void) )
 		return LF_MALLOCERROR;
 	}
 	LF_DEBUG_OUT1( "Stack address from malloc = %p", stack.ss_sp );
-
+#ifdef VALGRIND
+	/* Sadly, this *still* doesn't fix all warnings. */
+	fiberList[numFibers].stackId =
+		VALGRIND_STACK_REGISTER(stack.ss_sp, ((char*) stack.ss_sp + FIBER_STACK));
+#endif
 
 	/* Install the new stack for the signal handler */
 	if ( sigaltstack( &stack, &oldStack ) )
@@ -154,6 +161,9 @@ void fiberYield()
 				LF_DEBUG_OUT1( "Fiber %d returned, cleaning up.", currentFiber );
 				
 				free( fiberList[currentFiber].stack );
+#ifdef VALGRIND
+				VALGRIND_STACK_DEREGISTER(fiberList[currentFiber].stackId);
+#endif
 				
 				/* Swap the last fiber with the current, now empty, entry */
 				-- numFibers;

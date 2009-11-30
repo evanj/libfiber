@@ -1,7 +1,10 @@
 CFLAGS=-Wall -Wextra -pedantic -Werror -g
 
+# To debug with valgrind:
+#CFLAGS:=$(CFLAGS) -DVALGRIND
+
 # To get debugging output
-CFLAGS:=$(CFLAGS) -DLF_DEBUG
+#CFLAGS:=$(CFLAGS) -DLF_DEBUG
 
 PROGRAMS=basic-uc basic-sjlj basic-clone example-uc example-sjlj example-clone
 all: $(PROGRAMS)
