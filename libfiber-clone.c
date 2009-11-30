@@ -58,7 +58,7 @@ static int fiberStart( void* arg )
 	free( arguments );
 	arguments = NULL;
 
-	LF_DEBUG_OUT( "Child created and calling function = %p", arg );
+	LF_DEBUG_OUT1( "Child created and calling function = %p", arg );
 	function();
 	return 0;
 }
@@ -72,7 +72,7 @@ int spawnFiber( void (*func)(void) )
 	fiberList[numFibers].stack = malloc( FIBER_STACK );
 	if ( fiberList[numFibers].stack == 0 )
 	{
-		LF_DEBUG_OUT( "Error: Could not allocate stack.", 0 );
+		LF_DEBUG_OUT( "Error: Could not allocate stack." );
 		return LF_MALLOCERROR;
 	}
 
@@ -80,7 +80,7 @@ int spawnFiber( void (*func)(void) )
 	arguments = (struct FiberArguments*) malloc( sizeof(*arguments) );
 	if ( arguments == 0 ) {
 		free( fiberList[numFibers].stack );
-		LF_DEBUG_OUT( "Error: Could not allocate fiber arguments.", 0 );
+		LF_DEBUG_OUT( "Error: Could not allocate fiber arguments." );
 		return LF_MALLOCERROR;
 	}
 	arguments->function = func;
@@ -92,7 +92,7 @@ int spawnFiber( void (*func)(void) )
 	{
 		free( fiberList[numFibers].stack );
 		free( arguments );
-		LF_DEBUG_OUT( "Error: clone system call failed.", 0 );
+		LF_DEBUG_OUT( "Error: clone system call failed." );
 		return LF_CLONEERROR;
 	}
 	
@@ -117,7 +117,7 @@ int waitForAllFibers()
 		pid = wait( 0 );
 		if ( pid == -1 )
 		{
-			LF_DEBUG_OUT( "Error: wait system call failed.", 0 );
+			LF_DEBUG_OUT( "Error: wait system call failed." );
 			exit( 1 );
 		}
 		
@@ -126,7 +126,7 @@ int waitForAllFibers()
 		{
 			if ( fiberList[i].pid == pid )
 			{
-				LF_DEBUG_OUT( "Child fiber pid = %d exited", pid );
+				LF_DEBUG_OUT1( "Child fiber pid = %d exited", pid );
 				numFibers --;
 				
 				free( fiberList[i].stack );
@@ -141,7 +141,7 @@ int waitForAllFibers()
 		}
 		if ( i == numFibers )
 		{
-			LF_DEBUG_OUT( "Did not find child pid = %d in the fiber list", pid ); 
+			LF_DEBUG_OUT1( "Did not find child pid = %d in the fiber list", pid ); 
 		}
 	}
 	

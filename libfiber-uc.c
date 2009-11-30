@@ -54,7 +54,7 @@ void fiberYield()
 	if ( inFiber )
 	{
 		/* Switch to the main context */
-		LF_DEBUG_OUT( "libfiber debug: Fiber %d yielding the processor...", currentFiber );
+		LF_DEBUG_OUT1( "libfiber debug: Fiber %d yielding the processor...", currentFiber );
 	
 		swapcontext( &fiberList[currentFiber].context, &mainContext );
 	}
@@ -66,15 +66,15 @@ void fiberYield()
 		/* Saved the state so call the next fiber */
 		currentFiber = (currentFiber + 1) % numFibers;
 		
-		LF_DEBUG_OUT( "Switching to fiber %d.", currentFiber );
+		LF_DEBUG_OUT1( "Switching to fiber %d.", currentFiber );
 		inFiber = 1;
 		swapcontext( &mainContext, &fiberList[ currentFiber ].context );
 		inFiber = 0;
-		LF_DEBUG_OUT( "Fiber %d switched to main context.", currentFiber );
+		LF_DEBUG_OUT1( "Fiber %d switched to main context.", currentFiber );
 		
 		if ( fiberList[currentFiber].active == 0 )
 		{
-			LF_DEBUG_OUT( "Fiber %d is finished. Cleaning up.\n", currentFiber );
+			LF_DEBUG_OUT1( "Fiber %d is finished. Cleaning up.\n", currentFiber );
 			/* Free the "current" fiber's stack */
 			free( fiberList[currentFiber].stack );
 			
@@ -120,7 +120,7 @@ int spawnFiber( void (*func)(void) )
 	
 	if ( fiberList[numFibers].stack == 0 )
 	{
-		LF_DEBUG_OUT( "Error: Could not allocate stack.", 0 );
+		LF_DEBUG_OUT( "Error: Could not allocate stack." );
 		return LF_MALLOCERROR;
 	}
 	
@@ -138,7 +138,7 @@ int waitForAllFibers()
 	/* If we are in a fiber, wait for all the *other* fibers to quit */
 	if ( inFiber ) fibersRemaining = 1;
 	
-	LF_DEBUG_OUT( "Waiting until there are only %d threads remaining...", fibersRemaining );
+	LF_DEBUG_OUT1( "Waiting until there are only %d threads remaining...", fibersRemaining );
 	
 	/* Execute the fibers until they quit */
 	while ( numFibers > fibersRemaining )

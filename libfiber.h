@@ -12,11 +12,13 @@
 #ifdef LF_DEBUG
 
 #include <stdio.h>
-#define LF_DEBUG_OUT( string, arg ) fprintf( stderr, "libfiber debug: " string "\n", arg )
+#define LF_DEBUG_OUT( string ) fprintf( stderr, "libfiber debug: " string "\n")
+#define LF_DEBUG_OUT1( string, arg ) fprintf( stderr, "libfiber debug: " string "\n", arg )
 
 #else
 
-#define LF_DEBUG_OUT( string, arg )
+#define LF_DEBUG_OUT( string )
+#define LF_DEBUG_OUT1( string, arg )
 
 #endif
 

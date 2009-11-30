@@ -1,5 +1,8 @@
 CFLAGS=-Wall -Wextra -pedantic -Werror -g
 
+# To get debugging output
+CFLAGS:=$(CFLAGS) -DLF_DEBUG
+
 PROGRAMS=basic-uc basic-sjlj basic-clone example-uc example-sjlj example-clone
 all: $(PROGRAMS)
 
