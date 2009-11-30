@@ -1,3 +1,9 @@
+/* On Mac OS X, _XOPEN_SOURCE must be defined before including ucontext.h.
+Otherwise, getcontext/swapcontext causes memory corruption. See:
+
+http://lists.apple.com/archives/darwin-dev/2008/Jan/msg00229.html */
+#define _XOPEN_SOURCE
+
 #include "libfiber.h"
 
 #include <stdlib.h>
@@ -10,6 +16,8 @@ typedef struct
 {
 	ucontext_t context; /* Stores the current context */
 	int active; /* A boolean flag, 0 if it is not active, 1 if it is */
+	/* Original stack pointer. On Mac OS X, stack_t.ss_sp is changed. */
+	void* stack; 
 } fiber;
 
 /* The fiber "queue" */
@@ -66,7 +74,7 @@ void fiberYield()
 		{
 			LF_DEBUG_OUT( "Fiber %d is finished. Cleaning up.\n", currentFiber );
 			/* Free the "current" fiber's stack */
-			free( fiberList[currentFiber].context.uc_stack.ss_sp );
+			free( fiberList[currentFiber].stack );
 			
 			/* Swap the last fiber with the current, now empty, entry */
 			-- numFibers;
@@ -103,11 +111,12 @@ int spawnFiber( void (*func)(void) )
 
 	/* Set the context to a newly allocated stack */
 	fiberList[numFibers].context.uc_link = 0;
-	fiberList[numFibers].context.uc_stack.ss_sp = malloc( FIBER_STACK );
+	fiberList[numFibers].stack = malloc( FIBER_STACK );
+	fiberList[numFibers].context.uc_stack.ss_sp = fiberList[numFibers].stack;
 	fiberList[numFibers].context.uc_stack.ss_size = FIBER_STACK;
-	fiberList[numFibers].context.uc_stack.ss_flags = 0;	
+	fiberList[numFibers].context.uc_stack.ss_flags = 0;
 	
-	if ( fiberList[numFibers].context.uc_stack.ss_sp == 0 )
+	if ( fiberList[numFibers].stack == 0 )
 	{
 		LF_DEBUG_OUT( "Error: Could not allocate stack.", 0 );
 		return LF_MALLOCERROR;

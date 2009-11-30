@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wextra -pedantic -Werror
+CFLAGS=-Wall -Wextra -pedantic -Werror -g
 
 all: basic-uc basic-sjlj example-uc example-sjlj
 

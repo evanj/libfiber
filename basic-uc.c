@@ -1,3 +1,9 @@
+/* On Mac OS X, _XOPEN_SOURCE must be defined before including ucontext.h.
+Otherwise, getcontext/swapcontext causes memory corruption. See:
+
+http://lists.apple.com/archives/darwin-dev/2008/Jan/msg00229.html */
+#define _XOPEN_SOURCE
+
 #include <ucontext.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,12 +24,14 @@ void threadFunction()
 
 int main()
 {
+        void* child_stack;
         /* Get the current execution context */
         getcontext( &child );
 
         /* Modify the context to a new stack */
+        child_stack = malloc( FIBER_STACK );
         child.uc_link = 0;
-        child.uc_stack.ss_sp = malloc( FIBER_STACK );
+        child.uc_stack.ss_sp = child_stack;
         child.uc_stack.ss_size = FIBER_STACK;
         child.uc_stack.ss_flags = 0;        
         if ( child.uc_stack.ss_sp == 0 )
@@ -43,7 +51,7 @@ int main()
         swapcontext( &parent, &child );
 
         /* Free the stack */
-        free( child.uc_stack.ss_sp );
+        free( child_stack );
 
         printf( "Child fiber returned and stack freed\n" );
         
