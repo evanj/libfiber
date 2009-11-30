@@ -6,7 +6,7 @@ CFLAGS=-Wall -Wextra -pedantic -Werror -g
 # To get debugging output
 #CFLAGS:=$(CFLAGS) -DLF_DEBUG
 
-PROGRAMS=basic-uc basic-sjlj basic-clone example-uc example-sjlj example-clone
+PROGRAMS=basic-uc basic-sjlj basic-clone example-uc example-sjlj example-clone example-asm
 all: $(PROGRAMS)
 
 clean:
@@ -27,6 +27,9 @@ example-clone: libfiber-clone.o example.o
 	
 example-sjlj: libfiber-sjlj.o example.o
 	$(CC) libfiber-sjlj.o example.o -o example-sjlj
+
+example-asm: libfiber-asm.o example.o
+	$(CC) libfiber-asm.o example.o -o example-asm
 
 libfiber-uc.o: libfiber.h
 libfiber-clone.o: libfiber.h
