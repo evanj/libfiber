@@ -1,3 +1,5 @@
+#define _GNU_SOURCE // required for clone
+
 #include <assert.h>
 #include <sched.h>
 #include <signal.h>

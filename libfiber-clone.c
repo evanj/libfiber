@@ -1,5 +1,7 @@
 #include "libfiber.h"
 
+#define _GNU_SOURCE // required for clone
+
 #include <sched.h> /* For clone */
 #include <signal.h> /* For SIGCHLD */
 #include <stdlib.h>
