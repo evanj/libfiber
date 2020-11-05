@@ -1,4 +1,5 @@
-CFLAGS=-Wall -Wextra -pedantic -Werror -g
+#CC=clang
+CFLAGS=-Wall -Wextra -pedantic -Werror -g -std=gnu17 -Wno-language-extension-token
 
 # To debug with valgrind:
 #CFLAGS:=$(CFLAGS) -DVALGRIND

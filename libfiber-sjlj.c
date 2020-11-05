@@ -1,5 +1,8 @@
 #include "libfiber.h"
 
+// required for sigaltstack and stack_t
+#define _XOPEN_SOURCE 500
+
 #include <assert.h>
 #include <setjmp.h>
 #include <signal.h>
